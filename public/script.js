@@ -3,6 +3,9 @@ class Vector {
 		this.x = x;
 		this.y = y;
 	}
+	add(x, y) {
+		return new Vector(this.x + x, this.y + y);
+	}
 	multi(multiplier) {
 		return new Vector(this.x * multiplier, this.y * multiplier);
 	}
@@ -33,6 +36,7 @@ class Player {
 		this.dir = 0;
 		this.anim = 0;
 		this.image = new SheetImage(playerimage, 0, 0, 16, 16, 16, 16);
+		this.inventory = new Inventory(5, 5);
 	}
 	tick(kbd) {
 		let walk = 0;
@@ -87,6 +91,48 @@ class Keyboard {
 	}
 }
 
+class Chunk {
+	constructor(image, width, height, imagex, imagey) {
+		this.width = width;
+		this.height = height;
+		this.grid = [];
+		for (let y = 0; y < height; y++) {
+			this.grid[y] = [];
+			for (let x = 0; x < width; x++) {
+				this.grid[y][x] = new SheetImage(image, imagex, imagey, 16, 16, 16, 16);
+			}
+		}
+	}
+	
+	draw(context, pos, scale) {
+		for (let y = 0; y < this.height; y++) {
+			for (let x = 0; x < this.width; x++) {
+				this.grid[y][x].draw(context, pos.add(x * 32, y * 32), scale);
+			}
+		}
+	}
+}
+
+class Inventory {
+	constructor(width, height) {
+		this.width = width;
+		this.height = height;
+		this.grid = [];
+		for (let y = 0; y < height; y++) {
+			this.grid[y] = [];
+			for (let x = 0; x < width; x++) {
+				this.grid[y][x] = new Item();
+			}
+		}
+	}
+}
+
+class Item {
+	constructor() {
+		this.image = new SheetImage(sheet, 0, 0, 16, 16, 16, 16);
+	}
+}
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
@@ -100,13 +146,7 @@ const height = 16;
 let mouse = new Vector(0, 0)
 mouse.image = document.getElementById("mouse")
 
-let map = [];
-for (let y = 0; y < height; y++) {
-	map[y] = [];
-	for (let x = 0; x < width; x++) {
-		map[y][x] = new SheetImage(sheet, Math.round(Math.random()), 0, 16, 16, 16, 16);
-	}
-}
+let map = new Chunk(sheet, width, height, 0, 0);
 
 let player = new Player();
 let keyboard = new Keyboard();
@@ -116,19 +156,10 @@ canvas.addEventListener('mousemove', (e) => {
     mouse.y = e.offsetY;
 });
 
-function drawGrid(context, gridsize, grid, pos, scale) {
-	for (let y = 0; y < gridsize.y; y++) {
-		for (let x = 0; x < gridsize.x; x++) {
-			tile = grid[y][x];
-			tile.draw(context, new Vector(pos.x + (x * tile.size.x * scale.x), pos.y + (y * tile.size.y * scale.y)), scale);
-		}
-	}
-}
-
 function update(timestamp) {
 	player.tick(keyboard);
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	drawGrid(ctx, new Vector(width, height), map, new Vector(0, 0), new Vector(2, 2));
+	map.draw(ctx, new Vector(0, 0), new Vector(2, 2));
 	player.image.draw(ctx, player.pos.multi(2), new Vector(2, 2));
     requestAnimationFrame(update);
 }
